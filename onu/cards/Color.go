@@ -21,3 +21,9 @@ func (c *Color) IsAny(colors ...string) bool {
 	}
 	return false
 }
+
+func ColorFrom(s string) *Color {
+	return &Color{
+		Color: s,
+	}
+}
