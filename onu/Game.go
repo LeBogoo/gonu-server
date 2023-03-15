@@ -122,3 +122,9 @@ func (g *Game) SetGamemode(gamemode string) {
 
 	fmt.Printf("Switched gamemode to %s\n", g.GameMode.GetDescription())
 }
+
+func (g *Game) Start() {
+	fmt.Println("Starting game", g.LobbyCode)
+	gameStartEvent := events.NewGameStartEvent()
+	g.BroadcastEvent(gameStartEvent)
+}

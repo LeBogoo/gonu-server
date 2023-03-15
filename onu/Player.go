@@ -23,6 +23,7 @@ type Player struct {
 func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
 	handler.RegisterEvent(&events.JoinLobbyEvent{})
 	handler.RegisterEvent(&events.SettingsChangedEvent{})
+	handler.RegisterEvent(&events.GameStartEvent{})
 
 	handler.RegisterCallback("JoinLobbyEvent", func(event *events.JoinLobbyEvent, conn *websocket.Conn) {
 		p.Username = event.Username
@@ -63,6 +64,14 @@ func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
 
 		p.Game.BroadcastSettings()
 	})
+
+	handler.RegisterCallback("GameStartEvent", func(event *events.GameStartEvent, conn *websocket.Conn) {
+		if p.Game == nil || p.Game.Admin != p {
+			return
+		}
+
+		p.Game.Start()
+	})
 }
 
 func NewPlayer(ws *websocket.Conn, games *map[string]*Game) *Player {
@@ -93,6 +102,7 @@ func NewPlayer(ws *websocket.Conn, games *map[string]*Game) *Player {
 				break
 			}
 
+			fmt.Printf("Received message: %s\n", msg)
 			handler.HandleMessage(msg, ws)
 		}
 	}()
