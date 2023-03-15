@@ -1,9 +1,11 @@
 package onu
 
 import (
+	"fmt"
 	"gonu-server/eventsystem"
 	"gonu-server/eventsystem/events"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -11,69 +13,83 @@ import (
 
 type Player struct {
 	Ws           *websocket.Conn
+	UserId       string
+	Username     string
 	EventHandler *eventsystem.EventHandler
+	Games        *map[string]*Game
+	Game         *Game
 }
 
-func registerCallbacks(handler *eventsystem.EventHandler) {
+func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
 	handler.RegisterEvent(&events.JoinLobbyEvent{})
 	handler.RegisterEvent(&events.SettingsChangedEvent{})
 
 	handler.RegisterCallback("JoinLobbyEvent", func(event *events.JoinLobbyEvent, conn *websocket.Conn) {
-		log.Println("JoinLobbyEvent", event.Name, event.LobbyCode, event.Username)
+		p.Username = event.Username
 
-		// generate a random UUID
-		userId, _ := uuid.NewRandom()
+		game := (*p.Games)[event.LobbyCode]
+		created := game == nil
 
-		conn.WriteJSON(events.NewJoinedLobbyEvent(userId.String()))
-
-		settings := make(map[string]events.OnuSettings)
-		settings["CardAmount"] = events.OnuSettings{
-			Name:     "Card amount",
-			Value:    "7",
-			Defaults: []string{"5", "7", "10", "15", "20"},
+		if game == nil {
+			game = NewGame(event.LobbyCode)
+			(*p.Games)[event.LobbyCode] = game
 		}
 
-		settings["GameMode"] = events.OnuSettings{
-			Name:     "Gamemode",
-			Value:    "Classic",
-			Defaults: []string{"Classic", "Lite", "Special"},
+		game.AddPlayer(p)
+
+		if created {
+			go func() {
+				time.Sleep(100 * time.Millisecond)
+				game.SetAdmin(p)
+			}()
 		}
 
-		settings["DevMode"] = events.OnuSettings{
-			Name:     "Devmode",
-			Value:    "Normal",
-			Defaults: []string{"Normal", "Verbose", "Debug"},
-		}
+		p.Game = game
 
-		conn.WriteJSON(events.NewSettingsChangedEvent(settings))
+		fmt.Println(game.LobbyCode, game.Players)
 
-		conn.WriteJSON(events.NewUpdateAdminEvent(userId.String()))
+		conn.WriteJSON(events.NewJoinedLobbyEvent(p.UserId))
+		conn.WriteJSON(events.NewSettingsChangedEvent(game.Settings))
 	})
 
 	handler.RegisterCallback("SettingsChangedEvent", func(event *events.SettingsChangedEvent, conn *websocket.Conn) {
-		log.Println("SettingsChangedEvent", event.Name, event.Settings)
+		if p.Game == nil || p.Game.Admin != p {
+			return
+		}
+
+		for _, setting := range event.Settings {
+			p.Game.Settings[setting.Name] = setting
+		}
+
+		p.Game.BroadcastSettings()
 	})
 }
 
-func NewConnection(ws *websocket.Conn) *Player {
+func NewPlayer(ws *websocket.Conn, games *map[string]*Game) *Player {
 	handler := eventsystem.NewEventHandler()
-
-	registerCallbacks(handler)
 
 	player := &Player{
 		Ws:           ws,
 		EventHandler: handler,
+		Games:        games,
+		UserId:       uuid.New().String(),
 	}
 
+	player.registerCallbacks(handler)
+
 	go func() {
-		defer func() {
-			ws.Close()
-		}()
+		defer func() { ws.Close() }()
 
 		for {
 			_, msg, err := ws.ReadMessage()
 			if err != nil {
-				log.Println("Error reading message:", err)
+				if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					if player.Game != nil {
+						player.Game.RemovePlayer(player)
+					}
+				} else {
+					log.Println("Error reading message:", err)
+				}
 				break
 			}
 

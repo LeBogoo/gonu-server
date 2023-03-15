@@ -38,17 +38,19 @@ func main() {
 	// add CORS middleware to the pingHandler function
 	pingCorsHandler := handlers.CORS()(http.HandlerFunc(pingHandler))
 
+	games := make(map[string]*onu.Game)
+
 	// define the WebSocket handler for the root route
 	wsHandler := func(w http.ResponseWriter, r *http.Request) {
 		// upgrade the HTTP connection to a WebSocket connection
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println(err)
+			// log.Println(err)
 			return
 		}
 
 		// create a new player
-		onu.NewConnection(conn)
+		onu.NewPlayer(conn, &games)
 
 	}
 

@@ -1,6 +1,6 @@
 package events
 
-type OnuSettings struct {
+type OnuSetting struct {
 	Name     string   `json:"name"`
 	Value    string   `json:"value"`
 	Defaults []string `json:"defaults"`
@@ -8,10 +8,10 @@ type OnuSettings struct {
 
 type SettingsChangedEvent struct {
 	BaseEvent
-	Settings map[string]OnuSettings `json:"settings"`
+	Settings map[string]OnuSetting `json:"settings"`
 }
 
-func NewSettingsChangedEvent(settings map[string]OnuSettings) *SettingsChangedEvent {
+func NewSettingsChangedEvent(settings map[string]OnuSetting) *SettingsChangedEvent {
 	return &SettingsChangedEvent{
 		BaseEvent: BaseEvent{Name: "SettingsChangedEvent"},
 		Settings:  settings,
