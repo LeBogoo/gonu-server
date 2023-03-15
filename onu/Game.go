@@ -44,12 +44,6 @@ func NewGame(lobbyCode string) *Game {
 		Defaults: gamemodeNames,
 	})
 
-	game.SetSetting(events.OnuSetting{
-		Name:     "Max Players",
-		Value:    "10",
-		Defaults: []string{"10", "20", "30", "40"},
-	})
-
 	return game
 }
 
