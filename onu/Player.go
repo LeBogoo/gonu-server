@@ -58,7 +58,7 @@ func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
 		}
 
 		for _, setting := range event.Settings {
-			p.Game.Settings[setting.Name] = setting
+			p.Game.SetSetting(setting)
 		}
 
 		p.Game.BroadcastSettings()

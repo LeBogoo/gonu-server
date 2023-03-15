@@ -3,13 +3,21 @@ package onu
 import (
 	"fmt"
 	"gonu-server/eventsystem/events"
+	"gonu-server/onu/gamemodes"
 )
 
 type Game struct {
 	LobbyCode string
 	Players   []*Player
 	Admin     *Player
+	GameMode  gamemodes.Gamemode
 	Settings  map[string]events.OnuSetting
+}
+
+var modes = []gamemodes.Gamemode{
+	gamemodes.NewClassicGamemode(),
+	gamemodes.NewLiteGamemode(),
+	gamemodes.NewSpecialGamemode(),
 }
 
 func NewGame(lobbyCode string) *Game {
@@ -25,10 +33,15 @@ func NewGame(lobbyCode string) *Game {
 		Defaults: []string{"5", "7", "10", "15", "20"},
 	})
 
+	gamemodeNames := make([]string, len(modes))
+	for i, gamemode := range modes {
+		gamemodeNames[i] = gamemode.GetName()
+	}
+
 	game.SetSetting(events.OnuSetting{
 		Name:     "Gamemode",
-		Value:    "Classic",
-		Defaults: []string{"Lite", "Classic", "Special"},
+		Value:    gamemodeNames[0],
+		Defaults: gamemodeNames,
 	})
 
 	game.SetSetting(events.OnuSetting{
@@ -98,4 +111,20 @@ func (g *Game) BroadcastSettings() {
 
 func (g *Game) SetSetting(setting events.OnuSetting) {
 	g.Settings[setting.Name] = setting
+
+	if setting.Name == "Gamemode" {
+		g.SetGamemode(setting.Value)
+	}
+}
+
+func (g *Game) SetGamemode(gamemode string) {
+	g.GameMode = modes[0]
+	for _, mode := range modes {
+		if mode.GetName() == gamemode {
+			g.GameMode = mode
+			break
+		}
+	}
+
+	fmt.Printf("Switched gamemode to %s\n", g.GameMode.GetDescription())
 }
