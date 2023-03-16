@@ -2,6 +2,7 @@ package onu
 
 import (
 	"fmt"
+	"gonu-server/onu/cards"
 	"log"
 	"time"
 
@@ -10,14 +11,14 @@ import (
 )
 
 type Player struct {
-	Ws           *websocket.Conn   `json:"-"`
-	UserId       string            `json:"uuid"`
-	Username     string            `json:"username"`
-	Spectating   bool              `json:"spectating"`
-	CardCount    int               `json:"cardCount"`
-	EventHandler *EventHandler     `json:"-"`
-	Games        *map[string]*Game `json:"-"`
-	Game         *Game             `json:"-"`
+	Ws           *websocket.Conn
+	UserId       string
+	Username     string
+	Spectating   bool
+	Cards        []cards.Card
+	EventHandler *EventHandler
+	Games        *map[string]*Game
+	Game         *Game
 }
 
 func (p *Player) registerCallbacks(handler *EventHandler) {

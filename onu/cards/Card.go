@@ -5,9 +5,9 @@ import (
 )
 
 type Card struct {
-	Type  string
-	Color Color
-	Id    string
+	Type  string `json:"type"`
+	Color Color  `json:"color"`
+	Id    string `json:"id"`
 }
 
 func NewCard(cardType string, color Color) *Card {

@@ -2,7 +2,10 @@ package onu
 
 import (
 	"fmt"
+	"gonu-server/onu/cards"
 	"gonu-server/onu/gamemodes"
+	"strconv"
+	"time"
 )
 
 type Game struct {
@@ -23,8 +26,9 @@ var modes = []gamemodes.Gamemode{
 func NewGame(lobbyCode string) *Game {
 
 	game := &Game{
-		LobbyCode: lobbyCode,
-		Settings:  make(map[string]OnuSetting),
+		LobbyCode:    lobbyCode,
+		ActivePlayer: 0,
+		Settings:     make(map[string]OnuSetting),
 	}
 
 	game.SetSetting(OnuSetting{
@@ -82,13 +86,24 @@ func (g *Game) RemovePlayer(player *Player) {
 
 }
 
-func (g *Game) GetPlayerById(userId string) *Player {
+func (g *Game) GetPlayers() ([]*Player, []*Player) {
+	players := make([]*Player, 0)
+	spectators := make([]*Player, 0)
 	for _, p := range g.Players {
-		if p.UserId == userId {
-			return p
+		if !p.Spectating {
+			players = append(players, p)
+		} else {
+			spectators = append(spectators, p)
 		}
 	}
+	return players, spectators
+}
 
+func (g *Game) GetActivePlayer() *Player {
+	players, _ := g.GetPlayers()
+	if len(players) != 0 {
+		return players[g.ActivePlayer]
+	}
 	return nil
 }
 
@@ -132,4 +147,28 @@ func (g *Game) Start() {
 	fmt.Println("Starting game", g.LobbyCode)
 	gameStartEvent := NewGameStartEvent()
 	g.BroadcastEvent(gameStartEvent)
+
+	g.ActivePlayer = 0
+	for _, p := range g.Players {
+		p.Spectating = false
+
+		// generate cards
+		p.Cards = make([]cards.Card, 0)
+		cardAmount, _ := strconv.Atoi(g.Settings["Card amount"].Value)
+
+		for i := 0; i < cardAmount; i++ {
+			p.Cards = append(p.Cards, g.GameMode.RandomCard())
+		}
+
+		p.Ws.WriteJSON(NewUpdateDeckEvent(p.Cards))
+	}
+
+	g.BroadcastEvent(NewCardPlacedEvent(*cards.NewCard("w", *cards.ColorFrom("r"))))
+	go func() {
+		time.Sleep(1 * time.Second)
+		g.BroadcastEvent(NewPlayerTurnEvent(g.GetActivePlayer().UserId))
+
+	}()
+
+	g.BroadcastPlayerlist()
 }
