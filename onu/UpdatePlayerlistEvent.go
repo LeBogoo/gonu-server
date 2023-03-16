@@ -2,11 +2,12 @@ package onu
 
 type UpdatePlayerlistEvent struct {
 	BaseEvent
-	UUID string `json:"uuid"`
+	Playerlist []*Player `json:"playerlist"`
 }
 
-func NewUpdatePlayerlistEvent(playerlist []interface{}) *UpdatePlayerlistEvent {
+func NewUpdatePlayerlistEvent(playerlist []*Player) *UpdatePlayerlistEvent {
 	return &UpdatePlayerlistEvent{
-		BaseEvent: BaseEvent{Name: "UpdatePlayerlistEvent"},
+		BaseEvent:  BaseEvent{Name: "UpdatePlayerlistEvent"},
+		Playerlist: playerlist,
 	}
 }

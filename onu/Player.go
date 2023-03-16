@@ -10,13 +10,14 @@ import (
 )
 
 type Player struct {
-	Ws           *websocket.Conn
-	UserId       string
-	Username     string
-	Spectating   bool
-	EventHandler *EventHandler
-	Games        *map[string]*Game
-	Game         *Game
+	Ws           *websocket.Conn   `json:"-"`
+	UserId       string            `json:"uuid"`
+	Username     string            `json:"username"`
+	Spectating   bool              `json:"spectating"`
+	CardCount    int               `json:"cardCount"`
+	EventHandler *EventHandler     `json:"-"`
+	Games        *map[string]*Game `json:"-"`
+	Game         *Game             `json:"-"`
 }
 
 func (p *Player) registerCallbacks(handler *EventHandler) {
@@ -50,6 +51,8 @@ func (p *Player) registerCallbacks(handler *EventHandler) {
 
 		conn.WriteJSON(NewJoinedLobbyEvent(p.UserId))
 		conn.WriteJSON(NewSettingsChangedEvent(game.Settings))
+
+		game.BroadcastPlayerlist()
 	})
 
 	handler.RegisterCallback("SettingsChangedEvent", func(event *SettingsChangedEvent, conn *websocket.Conn) {

@@ -103,6 +103,11 @@ func (g *Game) BroadcastSettings() {
 	g.BroadcastEvent(settingsEvent)
 }
 
+func (g *Game) BroadcastPlayerlist() {
+	playerlistEvent := NewUpdatePlayerlistEvent(g.Players)
+	g.BroadcastEvent(playerlistEvent)
+}
+
 func (g *Game) SetSetting(setting OnuSetting) {
 	g.Settings[setting.Name] = setting
 
