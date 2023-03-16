@@ -1,4 +1,4 @@
-package events
+package onu
 
 type OnuSetting struct {
 	Name     string   `json:"name"`

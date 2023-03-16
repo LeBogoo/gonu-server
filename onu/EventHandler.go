@@ -1,9 +1,8 @@
-package eventsystem
+package onu
 
 import (
 	"encoding/json"
 	"fmt"
-	"gonu-server/eventsystem/events"
 	"reflect"
 
 	"github.com/gorilla/websocket"
@@ -32,7 +31,7 @@ func (h *EventHandler) RegisterCallback(name string, callback interface{}) {
 
 func (h *EventHandler) HandleMessage(message []byte, conn *websocket.Conn) error {
 	// Parse the message into a Message struct
-	var msg events.BaseEvent
+	var msg BaseEvent
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
 		return err

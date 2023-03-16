@@ -1,4 +1,4 @@
-package events
+package onu
 
 type UpdateAdminEvent struct {
 	BaseEvent

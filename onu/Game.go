@@ -2,16 +2,16 @@ package onu
 
 import (
 	"fmt"
-	"gonu-server/eventsystem/events"
 	"gonu-server/onu/gamemodes"
 )
 
 type Game struct {
-	LobbyCode string
-	Players   []*Player
-	Admin     *Player
-	GameMode  gamemodes.Gamemode
-	Settings  map[string]events.OnuSetting
+	LobbyCode    string
+	Players      []*Player
+	ActivePlayer int
+	Admin        *Player
+	GameMode     gamemodes.Gamemode
+	Settings     map[string]OnuSetting
 }
 
 var modes = []gamemodes.Gamemode{
@@ -24,10 +24,10 @@ func NewGame(lobbyCode string) *Game {
 
 	game := &Game{
 		LobbyCode: lobbyCode,
-		Settings:  make(map[string]events.OnuSetting),
+		Settings:  make(map[string]OnuSetting),
 	}
 
-	game.SetSetting(events.OnuSetting{
+	game.SetSetting(OnuSetting{
 		Name:     "Card amount",
 		Value:    "7",
 		Defaults: []string{"5", "7", "10", "15", "20"},
@@ -38,7 +38,7 @@ func NewGame(lobbyCode string) *Game {
 		gamemodeNames[i] = gamemode.GetName()
 	}
 
-	game.SetSetting(events.OnuSetting{
+	game.SetSetting(OnuSetting{
 		Name:     "Gamemode",
 		Value:    gamemodeNames[0],
 		Defaults: gamemodeNames,
@@ -56,7 +56,7 @@ func (g *Game) SetAdmin(player *Player) {
 
 	fmt.Printf("New admin for game %s is %s\n", g.LobbyCode, g.Players[0].UserId)
 	for _, p := range g.Players {
-		p.Ws.WriteJSON(events.NewUpdateAdminEvent(player.UserId))
+		p.Ws.WriteJSON(NewUpdateAdminEvent(player.UserId))
 	}
 }
 
@@ -99,11 +99,11 @@ func (g *Game) BroadcastEvent(event interface{}) {
 }
 
 func (g *Game) BroadcastSettings() {
-	settingsEvent := events.NewSettingsChangedEvent(g.Settings)
+	settingsEvent := NewSettingsChangedEvent(g.Settings)
 	g.BroadcastEvent(settingsEvent)
 }
 
-func (g *Game) SetSetting(setting events.OnuSetting) {
+func (g *Game) SetSetting(setting OnuSetting) {
 	g.Settings[setting.Name] = setting
 
 	if setting.Name == "Gamemode" {
@@ -125,6 +125,6 @@ func (g *Game) SetGamemode(gamemode string) {
 
 func (g *Game) Start() {
 	fmt.Println("Starting game", g.LobbyCode)
-	gameStartEvent := events.NewGameStartEvent()
+	gameStartEvent := NewGameStartEvent()
 	g.BroadcastEvent(gameStartEvent)
 }

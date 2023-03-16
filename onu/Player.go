@@ -2,8 +2,6 @@ package onu
 
 import (
 	"fmt"
-	"gonu-server/eventsystem"
-	"gonu-server/eventsystem/events"
 	"log"
 	"time"
 
@@ -15,17 +13,18 @@ type Player struct {
 	Ws           *websocket.Conn
 	UserId       string
 	Username     string
-	EventHandler *eventsystem.EventHandler
+	Spectating   bool
+	EventHandler *EventHandler
 	Games        *map[string]*Game
 	Game         *Game
 }
 
-func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
-	handler.RegisterEvent(&events.JoinLobbyEvent{})
-	handler.RegisterEvent(&events.SettingsChangedEvent{})
-	handler.RegisterEvent(&events.GameStartEvent{})
+func (p *Player) registerCallbacks(handler *EventHandler) {
+	handler.RegisterEvent(&JoinLobbyEvent{})
+	handler.RegisterEvent(&SettingsChangedEvent{})
+	handler.RegisterEvent(&GameStartEvent{})
 
-	handler.RegisterCallback("JoinLobbyEvent", func(event *events.JoinLobbyEvent, conn *websocket.Conn) {
+	handler.RegisterCallback("JoinLobbyEvent", func(event *JoinLobbyEvent, conn *websocket.Conn) {
 		p.Username = event.Username
 
 		game := (*p.Games)[event.LobbyCode]
@@ -49,11 +48,11 @@ func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
 
 		fmt.Println(game.LobbyCode, game.Players)
 
-		conn.WriteJSON(events.NewJoinedLobbyEvent(p.UserId))
-		conn.WriteJSON(events.NewSettingsChangedEvent(game.Settings))
+		conn.WriteJSON(NewJoinedLobbyEvent(p.UserId))
+		conn.WriteJSON(NewSettingsChangedEvent(game.Settings))
 	})
 
-	handler.RegisterCallback("SettingsChangedEvent", func(event *events.SettingsChangedEvent, conn *websocket.Conn) {
+	handler.RegisterCallback("SettingsChangedEvent", func(event *SettingsChangedEvent, conn *websocket.Conn) {
 		if p.Game == nil || p.Game.Admin != p {
 			return
 		}
@@ -65,7 +64,7 @@ func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
 		p.Game.BroadcastSettings()
 	})
 
-	handler.RegisterCallback("GameStartEvent", func(event *events.GameStartEvent, conn *websocket.Conn) {
+	handler.RegisterCallback("GameStartEvent", func(event *GameStartEvent, conn *websocket.Conn) {
 		if p.Game == nil || p.Game.Admin != p {
 			return
 		}
@@ -75,12 +74,13 @@ func (p *Player) registerCallbacks(handler *eventsystem.EventHandler) {
 }
 
 func NewPlayer(ws *websocket.Conn, games *map[string]*Game) *Player {
-	handler := eventsystem.NewEventHandler()
+	handler := NewEventHandler()
 
 	player := &Player{
 		Ws:           ws,
 		EventHandler: handler,
 		Games:        games,
+		Spectating:   true,
 		UserId:       uuid.New().String(),
 	}
 

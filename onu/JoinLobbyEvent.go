@@ -1,4 +1,4 @@
-package events
+package onu
 
 type JoinLobbyEvent struct {
 	BaseEvent
