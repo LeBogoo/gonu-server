@@ -1,6 +1,9 @@
 package gamemodes
 
-import "gonu-server/onu/cards"
+import (
+	"gonu-server/onu/cards"
+	"math/rand"
+)
 
 type SpecialGamemode struct {
 	Gamemode
@@ -19,7 +22,14 @@ func (c *SpecialGamemode) GetDescription() string {
 }
 
 func (c *SpecialGamemode) RandomCard() cards.Card {
-	return *cards.NewCard("0", *cards.ColorFrom("g"))
+	presets := []cards.Preset{
+		*cards.NewClassicPreset(),
+		*cards.NewWishPreset(),
+	}
+
+	preset := presets[rand.Intn(len(presets))]
+
+	return *preset.RandomCard()
 }
 
 func (c *SpecialGamemode) CompareCards(cards.Card, cards.Card) bool {
